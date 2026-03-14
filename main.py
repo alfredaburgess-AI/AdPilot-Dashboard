@@ -20,7 +20,7 @@ from data import (
     PLATFORM_COLORS,
 )
 from engine import (
-    pick_recommendations,
+    analyze_campaigns,
     get_winner,
     score_campaign,
     compute_forecast_impact,
@@ -149,7 +149,32 @@ h1, h2, h3, h4, h5, h6, .stMarkdown p, span, label, div { color: var(--text) !im
 .stDataFrame { border: 1px solid var(--border) !important; border-radius: 14px !important; }
 button[kind="primary"] {
     background: linear-gradient(135deg, var(--accent-dark), var(--accent)) !important;
-    border: none !important; color: #fff !important; font-weight: 700 !important;
+    border: none !important; color: #ffffff !important; font-weight: 700 !important;
+}
+button[kind="primary"]:hover {
+    background: linear-gradient(135deg, var(--accent), var(--accent-light)) !important;
+    color: #ffffff !important;
+}
+button[kind="secondary"], button[kind="tertiary"],
+div[data-testid="stDownloadButton"] button,
+button:not([kind]) {
+    background: var(--surface2) !important;
+    border: 1px solid var(--border2) !important;
+    color: #ffffff !important; font-weight: 600 !important;
+}
+button[kind="secondary"]:hover, button[kind="tertiary"]:hover,
+div[data-testid="stDownloadButton"] button:hover,
+button:not([kind]):hover {
+    background: var(--surface3) !important;
+    border-color: var(--accent) !important; color: #ffffff !important;
+}
+/* Ensure all button text is white regardless of Streamlit state */
+button p, button span, button div,
+[data-testid="stBaseButton-secondary"] p,
+[data-testid="stBaseButton-primary"] p,
+[data-testid="baseButton-secondary"] p,
+[data-testid="baseButton-primary"] p {
+    color: #ffffff !important;
 }
 div[data-testid="stForm"] {
     background: var(--surface) !important; border: 1px solid var(--border2) !important;
@@ -190,13 +215,20 @@ PLOTLY_LAYOUT_DEFAULTS = dict(
 )
 
 
+def _hex_to_rgba(hex_color: str, alpha: float = 0.12) -> str:
+    """Convert '#7c6fea' to 'rgba(124,111,234,0.12)'."""
+    h = hex_color.lstrip("#")
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    return f"rgba({r},{g},{b},{alpha})"
+
+
 def _sparkline_fig(data: list[float], color: str) -> go.Figure:
     """Tiny area chart for KPI cards."""
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         y=data, mode="lines", fill="tozeroy",
         line=dict(color=color, width=2),
-        fillcolor=color.replace(")", ",.12)").replace("rgb", "rgba") if "rgb" in color else f"{color}20",
+        fillcolor=_hex_to_rgba(color, 0.12),
         hoverinfo="skip",
     ))
     fig.update_layout(
@@ -710,7 +742,8 @@ with fc_head_r:
 
 fc_l, fc_r = st.columns([2, 1])
 forecasts = get_forecast_actions()
-impact = compute_forecast_impact()
+all_recs = analyze_campaigns(campaigns_df)
+impact = compute_forecast_impact(all_recs)
 
 with fc_l:
     rows_html = ""
@@ -756,7 +789,7 @@ with fc_r:
     )
 
 if st.button("✦ Apply All Recommendations", type="primary", use_container_width=True, key="apply_all"):
-    st.session_state.applied_recs = set(range(len(RECOMMENDATION_POOL)))
+    st.session_state.applied_recs = set(range(len(all_recs)))
     st.success("All recommendations applied!")
 
 # ══════════════════════════════════════════════
@@ -818,15 +851,16 @@ if run_ai:
                 st.caption(step)
                 time.sleep(0.5)
 
-        recs = pick_recommendations(3)
+        recs = analyze_campaigns(campaigns_df)
+        ai_impact = compute_forecast_impact(recs)
         st.session_state.ai_results = recs
 
         st.markdown(
             f"<div style='background:rgba(124,111,234,.06);border:1px solid rgba(124,111,234,.15);"
             f"border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:11px;color:#6b7a95;line-height:1.7'>"
             f"Analysed <strong style='color:#9d93f0'>{len(campaigns_df)} campaigns</strong> · "
-            f"<strong style='color:#9d93f0'>12.4 M impressions</strong><br>"
-            f"AI confidence: <strong style='color:#26d9b0'>91%</strong></div>",
+            f"<strong style='color:#9d93f0'>{len(recs)} recommendations</strong> generated<br>"
+            f"Projected net gain: <strong style='color:#26d9b0'>+${ai_impact['net_monthly_gain']:,}</strong></div>",
             unsafe_allow_html=True,
         )
 
