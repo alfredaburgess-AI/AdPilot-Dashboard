@@ -326,6 +326,8 @@ with top_r:
 
 @st.dialog("Create New Campaign")
 def new_campaign_dialog():
+    import html as _html
+
     name = st.text_input("Campaign Name *", max_chars=50, placeholder="e.g. Summer Sale 2026")
     c1, c2 = st.columns(2)
     with c1:
@@ -340,23 +342,28 @@ def new_campaign_dialog():
 
     if st.button("✦ Create Campaign", type="primary", use_container_width=True):
         errors = []
-        if not name.strip():
+        clean_name = name.strip()
+        if not clean_name:
             errors.append("Campaign name is required.")
+        elif clean_name.lower() in {
+            n.lower() for n in st.session_state.campaigns["name"].tolist()
+        }:
+            errors.append(f"A campaign named \"{_html.escape(clean_name)}\" already exists.")
         if not platform:
             errors.append("Please select a platform.")
         if errors:
             for e in errors:
                 st.error(e)
         else:
-            import math
+            safe_name = _html.escape(clean_name)
             new_row = pd.DataFrame([{
                 "id": st.session_state.next_id,
-                "name": name.strip(),
+                "name": safe_name,
                 "platform": platform,
                 "spend": spend,
-                "impressions": "—",
-                "ctr": round(0.5 + 3 * (hash(name) % 100) / 100, 2),
-                "conv_rate": round(2 + 8 * (hash(name) % 100) / 100, 1),
+                "impressions": 0,
+                "ctr": round(0.5 + 3 * (hash(clean_name) % 100) / 100, 2),
+                "conv_rate": round(2 + 8 * (hash(clean_name) % 100) / 100, 1),
                 "roas": roas,
                 "status": status,
             }])
@@ -364,7 +371,7 @@ def new_campaign_dialog():
                 [st.session_state.campaigns, new_row], ignore_index=True,
             )
             st.session_state.next_id += 1
-            st.success(f'"{name}" added successfully!')
+            st.success(f'"{safe_name}" added successfully!')
             time.sleep(0.8)
             st.rerun()
 
@@ -414,10 +421,14 @@ for col, ds in zip(ds_cols, sources):
 # ══════════════════════════════════════════════
 
 st.markdown("---")
-avg_roas = campaigns_df["roas"].mean()
-avg_ctr  = campaigns_df["ctr"].mean()
-avg_conv = campaigns_df["conv_rate"].mean()
-total_spend = campaigns_df["spend"].sum()
+if campaigns_df.empty:
+    avg_roas = avg_ctr = avg_conv = total_spend = 0.0
+    st.info("No campaign data available. Add a campaign to see KPIs.")
+else:
+    avg_roas = campaigns_df["roas"].mean()
+    avg_ctr  = campaigns_df["ctr"].mean()
+    avg_conv = campaigns_df["conv_rate"].mean()
+    total_spend = campaigns_df["spend"].sum()
 
 kpi_data = [
     ("ROAS",              f"{avg_roas:.2f}×", "↑ 12.4%", True,  "#7c6fea", 4.2,  0.8),
@@ -572,25 +583,30 @@ if search_q:
 if status_filter != "All":
     display_df = display_df[display_df["status"] == status_filter]
 
-avg = campaigns_df["roas"].mean()
-display_df = display_df.copy()
-display_df["vs_avg"] = display_df["roas"].apply(
-    lambda r: f"{'↑' if r >= avg else '↓'} {abs(round((r - avg) / avg * 100))}%"
-)
-display_df["spend_fmt"] = display_df["spend"].apply(_fmt_spend)
+if display_df.empty:
+    st.info("No campaigns match your search or filter. Try adjusting your criteria.")
+else:
+    avg = campaigns_df["roas"].mean() if not campaigns_df.empty else 1.0
+    if avg == 0:
+        avg = 1.0  # prevent division by zero
+    display_df = display_df.copy()
+    display_df["vs_avg"] = display_df["roas"].apply(
+        lambda r: f"{'↑' if r >= avg else '↓'} {abs(round((r - avg) / avg * 100))}%"
+    )
+    display_df["spend_fmt"] = display_df["spend"].apply(_fmt_spend)
 
-show_cols = {
-    "name": "Campaign", "platform": "Platform", "spend_fmt": "Spend",
-    "impressions": "Impressions", "ctr": "CTR %", "conv_rate": "Conv %",
-    "roas": "ROAS", "vs_avg": "vs Avg", "status": "Status",
-}
-st.dataframe(
-    display_df[list(show_cols.keys())].rename(columns=show_cols),
-    use_container_width=True,
-    hide_index=True,
-    height=min(400, 55 + len(display_df) * 38),
-)
-st.caption(f"Sorted by ROAS · {len(display_df)} campaigns")
+    show_cols = {
+        "name": "Campaign", "platform": "Platform", "spend_fmt": "Spend",
+        "impressions": "Impressions", "ctr": "CTR %", "conv_rate": "Conv %",
+        "roas": "ROAS", "vs_avg": "vs Avg", "status": "Status",
+    }
+    st.dataframe(
+        display_df[list(show_cols.keys())].rename(columns=show_cols),
+        use_container_width=True,
+        hide_index=True,
+        height=min(400, 55 + len(display_df) * 38),
+    )
+    st.caption(f"Sorted by ROAS · {len(display_df)} campaigns")
 
 # ══════════════════════════════════════════════
 #  Campaign Comparison

@@ -48,7 +48,15 @@ def analyze_campaigns(campaigns_df: pd.DataFrame) -> list[dict]:
     • CTR  < 1.5% →  "Refresh Creative" (Medium priority)
 
     Returns a list of recommendation dicts, one per triggered rule.
+    Returns an empty list if the DataFrame is empty or missing required columns.
     """
+    if campaigns_df.empty:
+        return []
+
+    required = {"roas", "ctr", "spend", "name", "platform"}
+    if not required.issubset(campaigns_df.columns):
+        return []
+
     recs: list[dict] = []
     avg_roas = campaigns_df["roas"].mean()
 
@@ -131,10 +139,15 @@ def score_campaign(row: pd.Series) -> float:
 
     Weights: ROAS 50%, CTR 25%, Conv Rate 25%.
     Normalised against reasonable ceilings (ROAS 10×, CTR 6%, Conv 15%).
+    Negative / missing values are clamped to 0.
     """
-    roas_score = min(row["roas"] / 10.0, 1.0) * 50
-    ctr_score  = min(row["ctr"]  / 6.0,  1.0) * 25
-    conv_score = min(row["conv_rate"] / 15.0, 1.0) * 25
+    roas_val = max(float(row.get("roas", 0)), 0)
+    ctr_val  = max(float(row.get("ctr", 0)), 0)
+    conv_val = max(float(row.get("conv_rate", 0)), 0)
+
+    roas_score = min(roas_val / 10.0, 1.0) * 50
+    ctr_score  = min(ctr_val  / 6.0,  1.0) * 25
+    conv_score = min(conv_val / 15.0, 1.0) * 25
     return round(roas_score + ctr_score + conv_score, 1)
 
 
@@ -149,7 +162,10 @@ def get_winner(campaigns_df: pd.DataFrame) -> dict:
         return {}
     best = campaigns_df.loc[campaigns_df["roas"].idxmax()]
     avg_roas = campaigns_df["roas"].mean()
-    above_pct = round((best["roas"] - avg_roas) / avg_roas * 100)
+    if avg_roas == 0:
+        above_pct = 0
+    else:
+        above_pct = round((best["roas"] - avg_roas) / avg_roas * 100)
     return {
         "name":          best["name"],
         "platform":      best["platform"],
