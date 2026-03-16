@@ -58,7 +58,6 @@ def analyze_campaigns(campaigns_df: pd.DataFrame) -> list[dict]:
         return []
 
     recs: list[dict] = []
-    avg_roas = campaigns_df["roas"].mean()
 
     for _, row in campaigns_df.iterrows():
         name = row["name"]
@@ -141,9 +140,15 @@ def score_campaign(row: pd.Series) -> float:
     Normalised against reasonable ceilings (ROAS 10×, CTR 6%, Conv 15%).
     Negative / missing values are clamped to 0.
     """
-    roas_val = max(float(row.get("roas", 0)), 0)
-    ctr_val  = max(float(row.get("ctr", 0)), 0)
-    conv_val = max(float(row.get("conv_rate", 0)), 0)
+    def safe_float(val) -> float:
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return 0.0
+
+    roas_val = max(safe_float(row.get("roas", 0)), 0)
+    ctr_val  = max(safe_float(row.get("ctr", 0)), 0)
+    conv_val = max(safe_float(row.get("conv_rate", 0)), 0)
 
     roas_score = min(roas_val / 10.0, 1.0) * 50
     ctr_score  = min(ctr_val  / 6.0,  1.0) * 25
@@ -160,8 +165,13 @@ def get_winner(campaigns_df: pd.DataFrame) -> dict:
     """
     if campaigns_df.empty:
         return {}
-    best = campaigns_df.loc[campaigns_df["roas"].idxmax()]
-    avg_roas = campaigns_df["roas"].mean()
+    
+    # Ensure ROAS is numeric to prevent crashes during argmax or mean operations
+    safe_roas = pd.to_numeric(campaigns_df["roas"], errors="coerce").fillna(0)
+    best_idx = safe_roas.idxmax()
+    best = campaigns_df.loc[best_idx]
+    
+    avg_roas = safe_roas.mean()
     if avg_roas == 0:
         above_pct = 0
     else:

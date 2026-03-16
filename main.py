@@ -36,7 +36,7 @@ st.set_page_config(
     page_title="AdPilot AI",
     page_icon="✦",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # ── Custom CSS (dark-theme matching the HTML prototype) ──
@@ -181,86 +181,48 @@ div[data-testid="stForm"] {
     border-radius: 14px !important; padding: 20px !important;
 }
 
-/* ─── Responsive: ≤ 768px ─── */
-@media (max-width: 768px) {
+/* ─── Responsive: Mobile & Tablet (≤ 800px) ─── */
+@media (max-width: 800px) {
+    /* ── Break Streamlit flex layout to allow overlay ── */
+    [data-testid="stAppViewContainer"] {
+        display: block !important;
+        overflow-x: hidden !important;
+        position: relative !important;
+    }
 
-    /* ── Sidebar: fixed overlay, off-screen by default ── */
-    [data-testid="stSidebar"] {
+    /* ── Sidebar: Overlay rather than pushing content ── */
+    section[data-testid="stSidebar"] {
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
-        width: 280px !important;
-        min-width: 280px !important;
-        max-width: 280px !important;
+        z-index: 99999 !important;
+        background-color: var(--surface) !important;
         height: 100vh !important;
-        z-index: 9999 !important;
-        background: var(--surface) !important;
-        border-right: 1px solid var(--border) !important;
-        box-shadow: 4px 0 30px rgba(0,0,0,.6) !important;
-        transition: transform 0.3s cubic-bezier(.4,0,.2,1) !important;
+        transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
     }
 
-    /* When sidebar is expanded → slide in + show backdrop */
-    [data-testid="stSidebar"][aria-expanded="true"] {
-        transform: translateX(0) !important;
-    }
-    [data-testid="stSidebar"][aria-expanded="true"] ~ .stMain::before {
-        content: "" !important;
-        position: fixed !important;
-        inset: 0 !important;
-        background: rgba(0,0,0,.55) !important;
-        z-index: 9998 !important;
-        pointer-events: auto !important;
+    /* ── Add semi-transparent backdrop when expanded ── */
+    section[data-testid="stSidebar"][aria-expanded="true"] {
+        box-shadow: 0 0 0 10000px rgba(0,0,0,0.65) !important;
     }
 
-    /* When sidebar is collapsed → slide off-screen */
-    [data-testid="stSidebar"][aria-expanded="false"],
-    [data-testid="stSidebar"]:not([aria-expanded="true"]) {
-        transform: translateX(-100%) !important;
-    }
-
-    /* ── Collapse toggle arrow: always visible, styled ── */
-    [data-testid="stSidebarCollapsedControl"] {
-        display: flex !important;
-        position: fixed !important;
-        top: 12px !important;
-        left: 12px !important;
-        z-index: 10000 !important;
-    }
-    [data-testid="stSidebarCollapsedControl"] button {
-        background: var(--surface2) !important;
-        border: 1px solid var(--border2) !important;
-        border-radius: 8px !important;
-        color: var(--accent-light) !important;
-        padding: 8px !important;
-        cursor: pointer !important;
-        box-shadow: 0 2px 12px rgba(0,0,0,.4) !important;
-    }
-    [data-testid="stSidebarCollapsedControl"] button:hover {
-        background: var(--accent-glow) !important;
-        border-color: var(--accent) !important;
-    }
-
-    /* ── Main content: full width, ignore sidebar offset ── */
-    .stMain,
-    [data-testid="stAppViewContainer"] > .stMain {
+    /* Ensure main content overrides Streamlit's flexbox push and takes full width */
+    div.stMain {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
         margin-left: 0 !important;
         padding-left: 1rem !important;
         padding-right: 1rem !important;
-        width: 100% !important;
-        max-width: 100% !important;
-    }
-    .stMainBlockContainer,
-    [data-testid="stMainBlockContainer"] {
-        max-width: 100% !important;
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
+        z-index: 1;
     }
 
-    /* ── Columns: stack vertically ── */
+    /* ── Columns: Stack into a single vertical column (st.columns(1)) ── */
     [data-testid="stHorizontalBlock"] {
-        flex-wrap: wrap !important;
-        gap: 8px !important;
+        flex-direction: column !important;
+        gap: 12px !important;
     }
     [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
         width: 100% !important;
@@ -268,61 +230,29 @@ div[data-testid="stForm"] {
         flex: 1 1 100% !important;
     }
 
-    /* KPI cards: 2-per-row (override the full-width stacking) */
-    [data-testid="stHorizontalBlock"]:has(.kpi-card) {
-        flex-wrap: wrap !important;
-    }
-    [data-testid="stHorizontalBlock"]:has(.kpi-card) > [data-testid="stColumn"] {
-        width: 48% !important;
-        min-width: 48% !important;
-        flex: 1 1 48% !important;
-    }
-
-    /* ── Component sizing ── */
-    .kpi-card {
-        padding: 14px !important;
-    }
-    .kpi-value {
-        font-size: 22px !important;
-        letter-spacing: -0.5px !important;
-    }
-    .kpi-label {
-        font-size: 10px !important;
-    }
-    .kpi-change, .kpi-period {
-        font-size: 10px !important;
-    }
-    .stat-card {
-        padding: 16px !important;
-        margin-bottom: 8px !important;
-    }
-    .winner-card {
+    /* ── Element sizing adjustments for mobile ── */
+    .kpi-card, .stat-card, .winner-card, .rec-card, .ds-item {
         padding: 16px !important;
     }
-    .rec-card {
-        padding: 14px !important;
-    }
-    .ds-item {
-        padding: 10px !important;
-        margin-bottom: 6px !important;
-    }
+    
     .forecast-row {
         grid-template-columns: 1fr !important;
-        gap: 6px !important;
-        padding: 10px !important;
+        gap: 8px !important;
+        padding: 12px !important;
     }
+    
     .stDataFrame {
         overflow-x: auto !important;
     }
+
+    /* Top-bar buttons (and others) fill width */
     [data-testid="stHorizontalBlock"] button {
-        font-size: 12px !important;
-        padding: 6px 10px !important;
+        width: 100% !important;
     }
-    h1 { font-size: 22px !important; }
-    h4 { font-size: 14px !important; }
+    
     .plat-leg-row {
-        padding: 8px 10px !important;
-        gap: 8px !important;
+        padding: 10px 12px !important;
+        gap: 10px !important;
     }
 }
 </style>
@@ -721,8 +651,8 @@ with filter_col1:
 display_df = campaigns_df.copy()
 if search_q:
     mask = (
-        display_df["name"].str.contains(search_q, case=False, na=False) |
-        display_df["platform"].str.contains(search_q, case=False, na=False)
+        display_df["name"].str.contains(search_q, case=False, na=False, regex=False) |
+        display_df["platform"].str.contains(search_q, case=False, na=False, regex=False)
     )
     display_df = display_df[mask]
 if status_filter != "All":
@@ -1041,4 +971,4 @@ if run_ai:
                 f"</div></div>",
                 unsafe_allow_html=True,
             )
-            st.button(f"Apply → {rec['title'][:25]}…", key=f"ai_rec_{i}")
+            st.button(f"Apply → {rec['title'][:25]}…", key=f"ai_rec_{i}", use_container_width=True)
