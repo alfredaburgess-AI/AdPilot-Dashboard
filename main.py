@@ -389,11 +389,11 @@ with top_r:
     with c2:
         csv_data = campaigns_df.to_csv(index=False).encode("utf-8")
         st.download_button("⬇ Export CSV", csv_data, "adpilot_campaigns.csv", "text/csv",
-                           use_container_width=True)
+                           width="stretch")
     with c3:
-        run_ai = st.button("✦ Run AI Analysis", type="primary", use_container_width=True)
+        run_ai = st.button("✦ Run AI Analysis", type="primary", width="stretch")
     with c4:
-        new_camp = st.button("+ New Campaign", use_container_width=True)
+        new_camp = st.button("+ New Campaign", width="stretch")
 
 # ══════════════════════════════════════════════
 #  New Campaign Dialog
@@ -415,7 +415,7 @@ def new_campaign_dialog():
     with c4:
         status = st.selectbox("Status", ["Active", "Paused"])
 
-    if st.button("✦ Create Campaign", type="primary", use_container_width=True):
+    if st.button("✦ Create Campaign", type="primary", width="stretch"):
         errors = []
         clean_name = name.strip()
         if not clean_name:
@@ -525,7 +525,7 @@ for col, (label, value, change, is_up, color, sp_base, sp_noise) in zip(kpi_cols
             unsafe_allow_html=True,
         )
         spark = generate_sparkline(sp_base, sp_noise)
-        st.plotly_chart(_sparkline_fig(spark, color), use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(_sparkline_fig(spark, color), width="stretch", config={"displayModeBar": False})
 
 # ══════════════════════════════════════════════
 #  Stat Row
@@ -629,7 +629,7 @@ fig_trend.update_layout(
     yaxis=dict(showgrid=True, gridcolor="#1f2a3a", color="#6b7a95"),
     legend=dict(orientation="h", y=1.12, font=dict(size=11)),
 )
-st.plotly_chart(fig_trend, use_container_width=True, config={"displayModeBar": False})
+st.plotly_chart(fig_trend, width="stretch", config={"displayModeBar": False})
 
 # ══════════════════════════════════════════════
 #  Campaign Table
@@ -677,7 +677,7 @@ else:
     }
     st.dataframe(
         display_df[list(show_cols.keys())].rename(columns=show_cols),
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
         height=min(400, 55 + len(display_df) * 38),
     )
@@ -744,7 +744,7 @@ with comp_r:
                    title="ROAS", range=[0, max_roas * 1.25]),
         showlegend=False,
     )
-    st.plotly_chart(fig_bars, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig_bars, width="stretch", config={"displayModeBar": False})
 
 # ══════════════════════════════════════════════
 #  Budget Allocation
@@ -782,7 +782,7 @@ with bud_l:
             x=0.5, y=0.5, font=dict(size=22, color="#f1f4f9"), showarrow=False,
         )],
     )
-    st.plotly_chart(fig_donut, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig_donut, width="stretch", config={"displayModeBar": False})
 
 with bud_r:
     for p in platform_budgets:
@@ -879,7 +879,7 @@ with fc_r:
         unsafe_allow_html=True,
     )
 
-if st.button("✦ Apply All Recommendations", type="primary", use_container_width=True, key="apply_all"):
+if st.button("✦ Apply All Recommendations", type="primary", width="stretch", key="apply_all"):
     st.session_state.applied_recs = set(range(len(all_recs)))
     st.success("All recommendations applied!")
 
@@ -917,7 +917,7 @@ for col, rec in zip(rec_cols, standing):
             f"</div></div>",
             unsafe_allow_html=True,
         )
-        st.button(f"Apply → {rec['title'][:20]}…", key=f"rec_{badge_cls}", use_container_width=True)
+        st.button(f"Apply → {rec['title'][:20]}…", key=f"rec_{badge_cls}", width="stretch")
 
 # ══════════════════════════════════════════════
 #  AI Analysis Panel (triggered by top-bar btn)
@@ -971,4 +971,4 @@ if run_ai:
                 f"</div></div>",
                 unsafe_allow_html=True,
             )
-            st.button(f"Apply → {rec['title'][:25]}…", key=f"ai_rec_{i}", use_container_width=True)
+            st.button(f"Apply → {rec['title'][:25]}…", key=f"ai_rec_{i}", width="stretch")
