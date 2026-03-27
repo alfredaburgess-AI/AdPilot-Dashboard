@@ -3,8 +3,18 @@ runtime: python311
 build:
   commands:
     build:
-      - pip3 install -r requirements.txt --target /app/vendor
+      - pip3 install -r requirements.txt --target /app/deps
+      - |
+        cat > /app/entrypoint.py << 'ENTRY'
+        import sys
+        sys.path.insert(0, '/app/deps')
+        sys.path.insert(0, '/app')
+        import streamlit.web.cli
+        sys.argv = ['streamlit', 'run', '/app/main.py', '--server.port', '8080', '--server.address', '0.0.0.0', '--server.headless', 'true', '--server.enableCORS', 'false']
+        streamlit.web.cli.main()
+        ENTRY
+      - which python3 && python3 --version
 run:
-  command: python3 -c "import sys;sys.path.insert(0,'/app/vendor');sys.path.insert(0,'/app');from streamlit.web.cli import main;sys.argv=['streamlit','run','/app/main.py','--server.port','8080','--server.address','0.0.0.0','--server.headless','true','--server.enableCORS','false'];main()"
+  command: python3 /app/entrypoint.py
   network:
     port: 8080
