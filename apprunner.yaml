@@ -4,11 +4,7 @@ build:
   commands:
     build:
       - pip3 install -r requirements.txt --target /app/vendor
-      - chmod +x /app/start.sh
 run:
-  command: /bin/sh /app/start.sh
+  command: python3 -c "import sys;sys.path.insert(0,'/app/vendor');sys.path.insert(0,'/app');from streamlit.web.cli import main;sys.argv=['streamlit','run','/app/main.py','--server.port','8080','--server.address','0.0.0.0','--server.headless','true','--server.enableCORS','false'];main()"
   network:
     port: 8080
-  env:
-    - name: PYTHONPATH
-      value: "/app/vendor:/app"
