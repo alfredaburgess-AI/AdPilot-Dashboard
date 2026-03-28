@@ -1,19 +1,8 @@
+import os
 import sys
 
-# Prepend the dependencies folder to Python's import path
-sys.path.insert(0, '/app/deps')
+# Set PYTHONPATH environment variable to include the deps directory before exec
+os.environ['PYTHONPATH'] = '/app/deps:/app'
 
-import streamlit.web.cli
-
-if __name__ == '__main__':
-    # Construct the arguments to run the streamlit app
-    sys.argv = [
-        'streamlit',
-        'run', 'main.py',
-        '--server.port', '8080',
-        '--server.address', '0.0.0.0',
-        '--server.headless', 'true',
-        '--server.enableCORS', 'false'
-    ]
-    # Launch Streamlit
-    sys.exit(streamlit.web.cli.main())
+# Exec into Python module streamlit
+os.execv(sys.executable, ['python3', '-m', 'streamlit', 'run', 'main.py', '--server.port', '8080', '--server.address', '0.0.0.0'])
