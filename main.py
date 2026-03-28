@@ -454,6 +454,80 @@ if new_camp:
     new_campaign_dialog()
 
 # ══════════════════════════════════════════════
+#  Page Routing Logic
+# ══════════════════════════════════════════════
+
+if page == "Campaigns":
+    st.markdown("---")
+    st.markdown("#### 📊 Campaigns: Cost per Lead")
+    st.caption("Estimated cost-per-lead (CPL) across active campaigns")
+
+    df = campaigns_df.copy()
+    # Mocking Cost per Lead based roughly on Spend and Conversion numbers
+    df["Cost per Lead"] = (df["spend"] / (df["spend"] * (df["conv_rate"]/100) * (df["ctr"]/100)) * 10).round(2)
+    df = df[df["status"] == "Active"].sort_values("Cost per Lead", ascending=False)
+
+    fig = go.Figure(data=[go.Bar(
+        x=df["name"],
+        y=df["Cost per Lead"],
+        marker_color="#26d9b0",
+        text=df["Cost per Lead"].apply(lambda x: f"${x}"),
+        textposition="outside",
+        textfont=dict(color="#f1f4f9", size=11, family="Inter")
+    )])
+    fig.update_layout(
+        **PLOTLY_LAYOUT_DEFAULTS,
+        height=400,
+        yaxis_title="Cost per Lead ($)",
+        yaxis=dict(showgrid=True, gridcolor="#1f2a3a", color="#6b7a95"),
+        xaxis=dict(showgrid=False, color="#c8d0df", tickfont=dict(size=11))
+    )
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.stop()
+
+elif page == "Audiences":
+    st.markdown("---")
+    st.markdown("#### 👥 Audience Analytics")
+    st.caption("Distribution by Audience Segment")
+
+    segments = pd.DataFrame({
+        "Audience Segment": ["18-24 (Gen Z)", "25-34 (Millennials)", "35-44", "45-54", "55+"],
+        "Users": [18400, 31200, 24500, 12800, 6100],
+        "Color": ["#7c6fea", "#26d9b0", "#f59e0b", "#f43f5e", "#0A66C2"]
+    })
+
+    fig = go.Figure(data=[go.Pie(
+        labels=segments["Audience Segment"],
+        values=segments["Users"],
+        hole=0.55,
+        marker=dict(colors=segments["Color"], line=dict(color="#080b12", width=2)),
+        textinfo="label+percent",
+        textposition="outside",
+        textfont=dict(color="#c8d0df", size=12, family="Inter"),
+        hovertemplate="<b>%{label}</b><br>%{value:,.0f} Users<br>%{percent}<extra></extra>"
+    )])
+    fig.update_layout(
+        **PLOTLY_LAYOUT_DEFAULTS,
+        height=450,
+        showlegend=False,
+        annotations=[dict(text="<b>93K</b><br><span style='font-size:11px;color:#6b7a95'>Total Users</span>", x=0.5, y=0.5, font=dict(size=26, color="#f1f4f9"), showarrow=False)]
+    )
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.stop()
+
+elif page == "A/B Testing":
+    st.markdown("---")
+    st.markdown("#### 🧪 A/B Testing Results")
+    st.caption("Experiment: Landing Page Checkout Flow")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric(label="Variation A (Control)", value="4.20%", delta="Baseline", delta_color="off")
+    with col2:
+        st.metric(label="Variation B (Challenger)", value="4.83%", delta="+15%", delta_color="normal")
+    st.stop()
+
+# ══════════════════════════════════════════════
 #  Data Sources
 # ══════════════════════════════════════════════
 
